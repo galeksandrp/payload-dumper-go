@@ -1,0 +1,42 @@
+# This workflow will install Python dependencies, run tests and lint with a single version of Python
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Python application
+
+on:
+  push
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        forrecovery:
+          - "https://bn.d.miui.com/OS1.0.3.0.UNHRUXM/miui_SAPPHIRENRUGlobal_OS1.0.3.0.UNHRUXM_d295f2f94c_14.0.zip"
+          - "https://bn.d.miui.com/OS1.0.2.0.UNHRUXM/miui_SAPPHIRENRUGlobal_OS1.0.2.0.UNHRUXM_1e3350df68_14.0.zip"
+          - "https://bn.d.miui.com/OS1.0.1.0.UNHRUXM/miui_SAPPHIRENRUGlobal_OS1.0.1.0.UNHRUXM_988a587097_14.0.zip"
+          - "https://bn.d.miui.com/V14.0.7.0.TNHRUXM/miui_SAPPHIRENRUGlobal_V14.0.7.0.TNHRUXM_e9c095a828_13.0.zip"
+          - "https://bn.d.miui.com/V14.0.6.0.TNHRUXM/miui_SAPPHIRENRUGlobal_V14.0.6.0.TNHRUXM_c8da74a8fd_13.0.zip"
+          - "https://bn.d.miui.com/V14.0.3.0.TNHRUXM/miui_SAPPHIRENRUGlobal_V14.0.3.0.TNHRUXM_6f52c587b4_13.0.zip"
+          - "https://bn.d.miui.com/V14.0.1.0.TNHRUXM/miui_SAPPHIRENRUGlobal_V14.0.1.0.TNHRUXM_2362c06399_13.0.zip"
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - run: mkdir -p custom/recovery/firmware/firmware-update
+
+    - run: wget "${{ matrix.forrecovery }}"
+      working-directory: custom
+    - run: echo "RECOVERY_NAME=$(basename custom/*.zip)" >> $GITHUB_ENV
+    - run: unzip custom/*.zip -d custom/recovery
+    - run: rm -rf custom/*.zip
+
+    - run: ./payload-dumper-go -o custom/recovery/firmware/firmware-update -partitions abl,bluetooth,countrycode,devcfg,dsp,featenabler,hyp,imagefv,keymaster,modem,qupfw,rpm,tz,uefisecapp,xbl,xbl_config custom/recovery/payload.bin
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: fw2_${{ env.RECOVERY_NAME }}
+        path: custom/recovery/firmware
